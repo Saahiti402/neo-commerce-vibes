@@ -93,18 +93,40 @@ export const Header = () => {
                 </Link>
                 
                 {/* Dropdown Menu */}
-                <div className="absolute top-full left-0 w-64 bg-popover border border-border rounded-lg shadow-elegant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute top-full left-0 w-80 bg-popover border border-border rounded-lg shadow-elegant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="p-4">
                     <h3 className="font-semibold text-foreground mb-3">{category.name}</h3>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-1 gap-4">
                       {category.subcategories.map((subcategory) => (
-                        <Link
-                          key={subcategory.id}
-                          to={`/category/${category.id}/${subcategory.id}`}
-                          className="block text-muted-foreground hover:text-gold transition-colors duration-200 py-1"
-                        >
-                          {subcategory.name}
-                        </Link>
+                        <div key={subcategory.id} className="space-y-2">
+                          <Link
+                            to={`/category/${category.id}/${subcategory.id}`}
+                            className="font-medium text-foreground hover:text-gold transition-colors duration-200 block"
+                          >
+                            {subcategory.name}
+                          </Link>
+                          {subcategory.subSubcategories && (
+                            <div className="pl-3 space-y-1">
+                              {subcategory.subSubcategories.slice(0, 4).map((subSubcategory) => (
+                                <Link
+                                  key={subSubcategory.id}
+                                  to={`/category/${category.id}/${subcategory.id}?filter=${subSubcategory.id}`}
+                                  className="block text-sm text-muted-foreground hover:text-gold transition-colors duration-200 py-1"
+                                >
+                                  {subSubcategory.name}
+                                </Link>
+                              ))}
+                              {subcategory.subSubcategories.length > 4 && (
+                                <Link
+                                  to={`/category/${category.id}/${subcategory.id}`}
+                                  className="block text-sm text-gold hover:underline py-1"
+                                >
+                                  +{subcategory.subSubcategories.length - 4} more
+                                </Link>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>

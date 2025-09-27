@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Filter, Grid, List, SlidersHorizontal } from "lucide-react";
 import { Header } from "@/components/Header";
 import { ProductCard } from "@/components/ProductCard";
@@ -12,10 +12,16 @@ import { Product } from "@/types/product";
 
 const CategoryPage = () => {
   const { categoryId, subcategoryId } = useParams();
+  const [searchParams] = useSearchParams();
+  const filterParam = searchParams.get('filter');
+  
   const [sortBy, setSortBy] = useState("featured");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedSubSubcategories, setSelectedSubSubcategories] = useState<string[]>(
+    filterParam ? [filterParam] : []
+  );
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -30,7 +36,20 @@ const CategoryPage = () => {
       return product.category === categoryId;
     });
 
-    // Apply filters
+    // Apply sub-subcategory filter
+    if (selectedSubSubcategories.length > 0) {
+      // For now, we'll filter by tags since our product structure doesn't have subSubcategory field
+      // In a real app, you'd add subSubcategory field to Product type
+      products = products.filter(product => 
+        selectedSubSubcategories.some(subSubcat => 
+          product.tags.some(tag => 
+            subSubcat.includes(tag) || tag.includes(subSubcat.split('-')[1] || '')
+          )
+        )
+      );
+    }
+
+    // Apply other filters
     if (selectedBrands.length > 0) {
       products = products.filter(product => selectedBrands.includes(product.brand));
     }
@@ -64,7 +83,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [categoryId, subcategoryId, sortBy, priceRange, selectedBrands, selectedColors]);
+  }, [categoryId, subcategoryId, selectedSubSubcategories, sortBy, priceRange, selectedBrands, selectedColors]);
 
   const brands = useMemo(() => {
     const brandSet = new Set(
@@ -85,6 +104,7 @@ const CategoryPage = () => {
   }, [categoryId, subcategoryId]);
 
   const pageTitle = subcategory ? subcategory.name : category?.name || "Products";
+  const subSubcategories = subcategory?.subSubcategories || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,6 +141,7 @@ const CategoryPage = () => {
                     onClick={() => {
                       setSelectedBrands([]);
                       setSelectedColors([]);
+                      setSelectedSubSubcategories([]);
                       setPriceRange({ min: 0, max: 1000 });
                     }}
                   >
@@ -164,7 +185,33 @@ const CategoryPage = () => {
 
                 <Separator className="my-6" />
 
-                {/* Brands */}
+                {/* Sub-subcategories */}
+                {subSubcategories.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="font-medium text-foreground mb-3">Categories</h4>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {subSubcategories.map((subSubcategory) => (
+                        <label key={subSubcategory.id} className="flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            className="rounded border-border"
+                            checked={selectedSubSubcategories.includes(subSubcategory.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedSubSubcategories(prev => [...prev, subSubcategory.id]);
+                              } else {
+                                setSelectedSubSubcategories(prev => prev.filter(id => id !== subSubcategory.id));
+                              }
+                            }}
+                          />
+                          <span className="text-sm text-foreground">{subSubcategory.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="my-6" />
                 <div className="mb-6">
                   <h4 className="font-medium text-foreground mb-3">Brands</h4>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -284,8 +331,22 @@ const CategoryPage = () => {
             </div>
 
             {/* Active Filters */}
-            {(selectedBrands.length > 0 || selectedColors.length > 0 || priceRange.min > 0 || priceRange.max < 1000) && (
+            {(selectedBrands.length > 0 || selectedColors.length > 0 || selectedSubSubcategories.length > 0 || priceRange.min > 0 || priceRange.max < 1000) && (
               <div className="flex flex-wrap gap-2 mb-6">
+                {selectedSubSubcategories.map((subSubcategoryId) => {
+                  const subSubcategory = subSubcategories.find(s => s.id === subSubcategoryId);
+                  return (
+                    <Badge key={subSubcategoryId} variant="outline" className="flex items-center gap-2">
+                      {subSubcategory?.name}
+                      <button
+                        onClick={() => setSelectedSubSubcategories(prev => prev.filter(id => id !== subSubcategoryId))}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  );
+                })}
                 {selectedBrands.map((brand) => (
                   <Badge key={brand} variant="outline" className="flex items-center gap-2">
                     {brand}
@@ -351,6 +412,7 @@ const CategoryPage = () => {
                   onClick={() => {
                     setSelectedBrands([]);
                     setSelectedColors([]);
+                    setSelectedSubSubcategories([]);
                     setPriceRange({ min: 0, max: 1000 });
                   }}
                 >

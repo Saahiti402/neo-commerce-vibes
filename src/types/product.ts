@@ -29,6 +29,13 @@ export interface Subcategory {
   id: string;
   name: string;
   parentCategory: string;
+  subSubcategories?: SubSubcategory[];
+}
+
+export interface SubSubcategory {
+  id: string;
+  name: string;
+  parentSubcategory: string;
 }
 
 export interface CartItem {
