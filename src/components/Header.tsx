@@ -1,0 +1,119 @@
+import { useState } from "react";
+import { Search, ShoppingCart, Heart, User, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/enhanced-button";
+import { Input } from "@/components/ui/input";
+import { categories } from "@/data/products";
+import { Link } from "react-router-dom";
+
+export const Header = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  return (
+    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      {/* Top Bar */}
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
+              <span className="text-gold-foreground font-bold text-lg">E</span>
+            </div>
+            <span className="text-xl font-bold text-foreground">EliteStore</span>
+          </Link>
+
+          {/* Search Bar */}
+          <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+            <div className="relative w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search for products, brands and more..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 pr-4 py-2 w-full bg-surface border-border focus:border-gold transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="icon" className="hidden md:flex">
+              <User className="h-5 w-5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="relative">
+              <Heart className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 bg-gold text-gold-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                2
+              </span>
+            </Button>
+            <Button variant="ghost" size="icon" className="relative">
+              <ShoppingCart className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 bg-gold text-gold-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                3
+              </span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Search */}
+        <div className="md:hidden mt-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              type="text"
+              placeholder="Search products..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 w-full bg-surface border-border"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className={`border-t border-border ${isMenuOpen ? 'block' : 'hidden md:block'}`}>
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row md:items-center md:space-x-8 py-3">
+            {categories.map((category) => (
+              <div key={category.id} className="relative group">
+                <Link
+                  to={`/category/${category.id}`}
+                  className="flex items-center space-x-1 py-2 text-foreground hover:text-gold transition-colors duration-200"
+                >
+                  <span className="font-medium">{category.name}</span>
+                </Link>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute top-full left-0 w-64 bg-popover border border-border rounded-lg shadow-elegant opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="p-4">
+                    <h3 className="font-semibold text-foreground mb-3">{category.name}</h3>
+                    <div className="space-y-2">
+                      {category.subcategories.map((subcategory) => (
+                        <Link
+                          key={subcategory.id}
+                          to={`/category/${category.id}/${subcategory.id}`}
+                          className="block text-muted-foreground hover:text-gold transition-colors duration-200 py-1"
+                        >
+                          {subcategory.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </nav>
+    </header>
+  );
+};
