@@ -13,6 +13,18 @@ import womensHeels from "@/assets/products/womens-heels.jpg";
 import mensLuxuryWatch from "@/assets/products/mens-luxury-watch.jpg";
 import womensJewelryNecklace from "@/assets/products/womens-jewelry-necklace.jpg";
 
+// Import new realistic product images
+import mensTraditionalKurta from "@/assets/products/mens-traditional-kurta.jpg";
+import mensFormalBlazer from "@/assets/products/mens-formal-blazer.jpg";
+import womensTraditionalLehenga from "@/assets/products/womens-traditional-lehenga.jpg";
+import womensWesternTop from "@/assets/products/womens-western-top.jpg";
+import kidsCasualTshirt from "@/assets/products/kids-casual-tshirt.jpg";
+import mensFormalShoes from "@/assets/products/mens-formal-shoes.jpg";
+import womensSandals from "@/assets/products/womens-sandals.jpg";
+import womensLeatherHandbag from "@/assets/products/womens-leather-handbag.jpg";
+import womensGoldEarrings from "@/assets/products/womens-gold-earrings.jpg";
+import smartphoneBlack from "@/assets/products/smartphone-black.jpg";
+
 export const categories: Category[] = [
   {
     id: "fashion",
@@ -369,13 +381,19 @@ const getProductImage = (categoryId: string, subcategoryId: string, subSubcatego
   // Map specific products to their generated images
   const imageMap: { [key: string]: string } = {
     "mens-casual": mensCasualTshirt,
-    "womens-western": womensWesternJeans,
-    "kids-casual": kidsCasualDress,
-    "mens-formal": mensFormalSuit,
+    "mens-traditional": mensTraditionalKurta,
+    "mens-formal": mensFormalBlazer,
+    "womens-western": womensWesternTop,
+    "womens-traditional": womensTraditionalLehenga,
+    "kids-casual": kidsCasualTshirt,
+    "mens-formal-shoes": mensFormalShoes,
     "womens-heels": womensHeels,
+    "womens-sandals": womensSandals,
     "luxury-watches": mensLuxuryWatch,
     "necklaces": womensJewelryNecklace,
-    "womens-traditional": womensTraditionalSaree,
+    "earrings": womensGoldEarrings,
+    "handbags": womensLeatherHandbag,
+    "smartphones": smartphoneBlack,
   };
 
   if (imageMap[subSubcategoryId]) {
