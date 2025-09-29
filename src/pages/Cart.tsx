@@ -1,88 +1,65 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trash2, Plus, Minus, ShoppingBag, Heart } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  quantity: number;
-  selectedColor?: string;
-  selectedSize?: string;
-}
+import { Trash2, Plus, Minus, ShoppingBag, Heart, ArrowLeft } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { Header } from "@/components/Header";
 
 export default function Cart() {
-  const { toast } = useToast();
-  
-  // Mock cart data - in real app this would come from context/database
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: "1",
-      name: "Premium Leather Jacket",
-      price: 299.99,
-      originalPrice: 399.99,
-      image: "/placeholder.svg",
-      quantity: 1,
-      selectedColor: "Black",
-      selectedSize: "L"
-    },
-    {
-      id: "2", 
-      name: "Designer Handbag Collection",
-      price: 199.99,
-      originalPrice: 299.99,
-      image: "/placeholder.svg",
-      quantity: 2,
-      selectedColor: "Brown"
-    }
-  ]);
+  const { 
+    cartItems, 
+    user, 
+    loading, 
+    removeFromCart, 
+    updateCartQuantity, 
+    moveToWishlist, 
+    getTotalPrice 
+  } = useCart();
 
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
-    }
-    
-    setCartItems(items => 
-      items.map(item => 
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast({
-      title: "Item removed from cart",
-      description: "The item has been removed from your shopping cart."
-    });
-  };
-
-  const moveToWishlist = (id: string) => {
-    const item = cartItems.find(item => item.id === id);
-    if (item) {
-      removeItem(id);
-      toast({
-        title: "Moved to wishlist",
-        description: `${item.name} has been moved to your wishlist.`
-      });
-    }
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const shipping = subtotal > 500 ? 0 : 49.99;
-  const tax = subtotal * 0.1;
+  const subtotal = getTotalPrice();
+  const shipping = subtotal > 40000 ? 0 : 499.99; // Free shipping over ₹40,000
+  const tax = subtotal * 0.18; // 18% GST
   const total = subtotal + shipping + tax;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading your cart...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground mb-4" />
+            <h1 className="text-3xl font-bold mb-4">Please login to view your cart</h1>
+            <p className="text-muted-foreground mb-8">You need to be logged in to manage your shopping cart.</p>
+            <Link to="/auth">
+              <Button size="lg" className="animate-pulse">
+                Login to Continue
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background pt-20">
+      <div className="min-h-screen bg-background">
+        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-16">
             <ShoppingBag className="mx-auto h-24 w-24 text-muted-foreground mb-4" />
@@ -100,8 +77,16 @@ export default function Cart() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20">
+    <div className="min-h-screen bg-background">
+      <Header />
       <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-2 mb-8">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Store</span>
+          </Link>
+        </div>
+        
         <div className="flex items-center gap-2 mb-8">
           <ShoppingBag className="h-8 w-8" />
           <h1 className="text-3xl font-bold">Shopping Cart ({cartItems.length} items)</h1>
@@ -115,29 +100,30 @@ export default function Cart() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     <img 
-                      src={item.image} 
+                      src={item.image_url} 
                       alt={item.name}
                       className="w-24 h-24 object-cover rounded-lg"
                     />
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">{item.brand}</p>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xl font-bold">₹{item.price.toFixed(2)}</span>
-                        {item.originalPrice && (
-                          <span className="text-sm text-muted-foreground line-through">
-                            ₹{item.originalPrice.toFixed(2)}
-                          </span>
-                        )}
-                        {item.originalPrice && (
-                          <Badge variant="destructive" className="text-xs">
-                            {Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}% OFF
-                          </Badge>
+                        {item.original_price && (
+                          <>
+                            <span className="text-sm text-muted-foreground line-through">
+                              ₹{item.original_price.toFixed(2)}
+                            </span>
+                            <Badge variant="destructive" className="text-xs">
+                              {Math.round(((item.original_price - item.price) / item.original_price) * 100)}% OFF
+                            </Badge>
+                          </>
                         )}
                       </div>
                       
                       <div className="flex gap-4 text-sm text-muted-foreground mb-4">
-                        {item.selectedColor && <span>Color: {item.selectedColor}</span>}
-                        {item.selectedSize && <span>Size: {item.selectedSize}</span>}
+                        {item.selected_color && <span>Color: {item.selected_color}</span>}
+                        {item.selected_size && <span>Size: {item.selected_size}</span>}
                       </div>
 
                       <div className="flex items-center justify-between">
@@ -145,7 +131,7 @@ export default function Cart() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
                           >
                             <Minus className="h-4 w-4" />
                           </Button>
@@ -153,7 +139,7 @@ export default function Cart() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -171,7 +157,7 @@ export default function Cart() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => removeItem(item.id)}
+                            onClick={() => removeFromCart(item.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -205,7 +191,7 @@ export default function Cart() {
                   <p className="text-sm text-green-600">🎉 You've qualified for free shipping!</p>
                 )}
                 <div className="flex justify-between">
-                  <span>Tax</span>
+                  <span>GST (18%)</span>
                   <span>₹{tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-4">
