@@ -12,16 +12,19 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { allProducts } from "@/data/products";
+import { useCart } from "@/contexts/CartContext";
 
 const ProductDetail = () => {
   const { productId } = useParams();
+  const { addToCart, addToWishlist, wishlistItems } = useCart();
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const product = allProducts.find(p => p.id === productId);
+  
+  const isWishlisted = wishlistItems.some(item => item.product_id === productId);
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
@@ -175,11 +178,11 @@ const ProductDetail = () => {
             {/* Price */}
             <div className="flex items-center gap-4">
               <span className="text-3xl font-bold text-foreground">
-                ${product.price.toFixed(2)}
+                ₹{product.price.toFixed(2)}
               </span>
               {product.originalPrice && (
                 <span className="text-xl text-muted-foreground line-through">
-                  ${product.originalPrice.toFixed(2)}
+                  ₹{product.originalPrice.toFixed(2)}
                 </span>
               )}
               {discountPercentage > 0 && (
@@ -287,7 +290,7 @@ const ProductDetail = () => {
                   variant="cart"
                   className="flex-1"
                   disabled={!product.inStock}
-                  onClick={() => console.log("Add to cart:", { product, quantity, selectedColor, selectedSize })}
+                  onClick={() => addToCart(product.id, quantity, selectedColor, selectedSize)}
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Add to Cart
@@ -295,7 +298,17 @@ const ProductDetail = () => {
                 <Button
                   variant="wishlist"
                   size="icon"
-                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  onClick={() => {
+                    if (isWishlisted) {
+                      const wishlistItem = wishlistItems.find(item => item.product_id === productId);
+                      if (wishlistItem) {
+                        // Note: removeFromWishlist would need to be added to CartContext
+                        addToWishlist(product.id);
+                      }
+                    } else {
+                      addToWishlist(product.id);
+                    }
+                  }}
                 >
                   <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
                 </Button>
@@ -444,8 +457,8 @@ const ProductDetail = () => {
                 <ProductCard
                   key={relatedProduct.id}
                   product={relatedProduct}
-                  onAddToCart={(product) => console.log("Add to cart:", product)}
-                  onAddToWishlist={(product) => console.log("Add to wishlist:", product)}
+                  onAddToCart={() => addToCart(relatedProduct.id)}
+                  onAddToWishlist={() => addToWishlist(relatedProduct.id)}
                 />
               ))}
             </div>

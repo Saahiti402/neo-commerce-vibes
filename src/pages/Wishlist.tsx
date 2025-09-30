@@ -1,103 +1,38 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-
-interface WishlistItem {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  brand: string;
-  rating: number;
-  inStock: boolean;
-}
+import { Heart, ShoppingCart, Trash2, Star } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { Header } from "@/components/Header";
 
 export default function Wishlist() {
-  const { toast } = useToast();
-  
-  // Mock wishlist data - in real app this would come from context/database
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([
-    {
-      id: "1",
-      name: "Premium Leather Jacket",
-      price: 299.99,
-      originalPrice: 399.99,
-      image: "/placeholder.svg",
-      brand: "StyleCraft Premium",
-      rating: 4.8,
-      inStock: true
-    },
-    {
-      id: "2",
-      name: "Designer Handbag Collection", 
-      price: 199.99,
-      originalPrice: 299.99,
-      image: "/placeholder.svg",
-      brand: "LuxeBags Elite",
-      rating: 4.9,
-      inStock: true
-    },
-    {
-      id: "3",
-      name: "Traditional Silk Saree",
-      price: 179.99,
-      image: "/placeholder.svg", 
-      brand: "Heritage Weaves",
-      rating: 4.7,
-      inStock: false
-    }
-  ]);
+  const { wishlistItems, removeFromWishlist, addToCart, user } = useCart();
 
-  const removeFromWishlist = (id: string) => {
-    const item = wishlistItems.find(item => item.id === id);
-    setWishlistItems(items => items.filter(item => item.id !== id));
-    toast({
-      title: "Removed from wishlist",
-      description: `${item?.name} has been removed from your wishlist.`
-    });
-  };
-
-  const addToCart = (item: WishlistItem) => {
-    if (!item.inStock) {
-      toast({
-        title: "Out of stock",
-        description: "This item is currently out of stock.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: "Added to cart",
-      description: `${item.name} has been added to your cart.`
-    });
-  };
-
-  const moveAllToCart = () => {
-    const inStockItems = wishlistItems.filter(item => item.inStock);
-    if (inStockItems.length === 0) {
-      toast({
-        title: "No items available",
-        description: "All items in your wishlist are currently out of stock.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    toast({
-      title: "Items added to cart",
-      description: `${inStockItems.length} items have been added to your cart.`
-    });
-  };
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-16">
+            <Heart className="mx-auto h-24 w-24 text-muted-foreground mb-4" />
+            <h1 className="text-3xl font-bold mb-4">Please login to view your wishlist</h1>
+            <p className="text-muted-foreground mb-8">You need to be logged in to manage your wishlist.</p>
+            <Link to="/auth">
+              <Button size="lg" className="animate-pulse">
+                Login to Continue
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (wishlistItems.length === 0) {
     return (
-      <div className="min-h-screen bg-background pt-20">
+      <div className="min-h-screen bg-background">
+        <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-16">
             <Heart className="mx-auto h-24 w-24 text-muted-foreground mb-4" />
@@ -115,95 +50,125 @@ export default function Wishlist() {
   }
 
   return (
-    <div className="min-h-screen bg-background pt-20">
+    <div className="min-h-screen bg-background">
+      <Header />
       <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center gap-2 mb-8">
+          <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+            <Heart className="h-4 w-4" />
+            <span>Back to Store</span>
+          </Link>
+        </div>
+        
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
-            <Heart className="h-8 w-8 text-red-500" />
+            <Heart className="h-8 w-8 text-gold fill-gold" />
             <h1 className="text-3xl font-bold">My Wishlist ({wishlistItems.length} items)</h1>
           </div>
-          
-          {wishlistItems.some(item => item.inStock) && (
-            <Button onClick={moveAllToCart} className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Move All to Cart
-            </Button>
-          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {wishlistItems.map((item) => (
-            <Card key={item.id} className="group overflow-hidden hover:shadow-lg transition-all duration-300">
-              <div className="relative overflow-hidden">
-                <img 
-                  src={item.image} 
-                  alt={item.name}
-                  className="w-full h-64 object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                {!item.inStock && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                    <Badge variant="destructive" className="text-sm">Out of Stock</Badge>
-                  </div>
-                )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {wishlistItems.map((item) => {
+            const discountPercentage = item.original_price 
+              ? Math.round(((item.original_price - item.price) / item.original_price) * 100)
+              : 0;
+            
+            return (
+              <Card key={item.id} className="group relative overflow-hidden hover:shadow-card transition-all duration-300 border-border">
+                {/* Remove Button */}
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-destructive hover:text-destructive-foreground"
                   onClick={() => removeFromWishlist(item.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-              </div>
-              
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{item.brand}</p>
-                  <h3 className="font-semibold line-clamp-2">{item.name}</h3>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold">₹{item.price.toFixed(2)}</span>
-                    {item.originalPrice && (
-                      <>
-                        <span className="text-sm text-muted-foreground line-through">
-                          ₹{item.originalPrice.toFixed(2)}
-                        </span>
-                        <Badge variant="destructive" className="text-xs">
-                          {Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}% OFF
-                        </Badge>
-                      </>
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-1">
-                    <div className="flex text-yellow-400">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={i < Math.floor(item.rating) ? "★" : "☆"}>
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                    <span className="text-sm text-muted-foreground">({item.rating})</span>
-                  </div>
+
+                {/* Product Image */}
+                <div className="relative overflow-hidden bg-surface">
+                  <Link to={`/product/${item.product_id}`}>
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop';
+                      }}
+                    />
+                  </Link>
+
+                  {/* Badges */}
+                  {discountPercentage > 0 && (
+                    <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">
+                      -{discountPercentage}%
+                    </Badge>
+                  )}
+                  {!item.in_stock && (
+                    <Badge className="absolute bottom-2 left-2 bg-muted text-muted-foreground">
+                      Out of Stock
+                    </Badge>
+                  )}
                 </div>
-              </CardContent>
-              
-              <CardFooter className="p-4 pt-0 flex flex-col gap-2">
-                <Button 
-                  className="w-full" 
-                  onClick={() => addToCart(item)}
-                  disabled={!item.inStock}
-                >
-                  <ShoppingCart className="h-4 w-4 mr-2" />
-                  {item.inStock ? "Add to Cart" : "Out of Stock"}
-                </Button>
-                <Link to={`/product/${item.id}`} className="w-full">
-                  <Button variant="outline" className="w-full">
-                    View Details
+
+                <CardContent className="p-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">{item.brand}</p>
+                    <Link to={`/product/${item.product_id}`}>
+                      <h3 className="font-semibold text-foreground group-hover:text-gold transition-colors line-clamp-2">
+                        {item.name}
+                      </h3>
+                    </Link>
+                    
+                    {/* Rating */}
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${
+                            i < Math.floor(item.rating) 
+                              ? 'fill-gold text-gold' 
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      ))}
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({item.rating.toFixed(1)})
+                      </span>
+                    </div>
+
+                    {/* Price */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-foreground">
+                        ₹{item.price.toFixed(2)}
+                      </span>
+                      {item.original_price && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          ₹{item.original_price.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="p-4 pt-0 flex flex-col gap-2">
+                  <Button 
+                    className="w-full" 
+                    onClick={() => addToCart(item.product_id)}
+                    disabled={!item.in_stock}
+                  >
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    {item.in_stock ? "Add to Cart" : "Out of Stock"}
                   </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
+                  <Link to={`/product/${item.product_id}`} className="w-full">
+                    <Button variant="outline" className="w-full">
+                      View Details
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>
